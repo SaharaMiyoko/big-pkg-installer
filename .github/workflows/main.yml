@@ -11,6 +11,8 @@ on:
     paths:
       - 'pkgbuild/**'
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
@@ -54,7 +56,11 @@ jobs:
         working-directory: src/pkgbuild
         run: |
           sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer")|' PKGBUILD
-          ln -sf ../.. big-pkg-installer
+          rm -rf big-pkg-installer
+          mkdir -p big-pkg-installer
+          cp -a ../. big-pkg-installer/
+          rm -rf big-pkg-installer/pkgbuild big-pkg-installer/.git big-pkg-installer/.github
+          
           chown -R builder:builder .
 
       - name: Build package
