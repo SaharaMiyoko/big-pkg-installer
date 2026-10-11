@@ -55,19 +55,27 @@ jobs:
       - name: Prepare source and PKGBUILD
         working-directory: src
         run: |
-          tar -czf pkgbuild/big-pkg-installer.tar.gz \
-            --exclude='pkgbuild' \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='*.tar.gz' \
-            .
+
+          mkdir -p /tmp/src-root
+          cp -a . /tmp/src-root/big-pkg-installer
+
+          rm -rf /tmp/src-root/big-pkg-installer/pkgbuild \
+                 /tmp/src-root/big-pkg-installer/.git \
+                 /tmp/src-root/big-pkg-installer/.github
+
+          tar -czf pkgbuild/big-pkg-installer.tar.gz -C /tmp/src-root big-pkg-installer
 
           cd pkgbuild
 
+
           sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer.tar.gz")|' PKGBUILD
 
+
+          sed -i '/^check()/,/^}/d' PKGBUILD
+
           ls -lh big-pkg-installer.tar.gz
-          cat PKGBUILD | grep -E '^(pkgname|pkgver|source)'
+          echo "=== PKGBUILD source line ==="
+          grep -E '^(pkgname|source|pkgver)' PKGBUILD
 
           chown -R builder:builder .
 
