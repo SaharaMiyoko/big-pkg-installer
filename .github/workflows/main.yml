@@ -1,0 +1,69 @@
+name: Build big-pkg-installer
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pkgbuild/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'pkgbuild/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Install base dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed \
+            base-devel \
+            git \
+            python \
+            python-gobject \
+            gtk4 \
+            libadwaita \
+            pacman-contrib \
+            fakeroot \
+            zstd \
+            libarchive \
+            polkit \
+            python-pytest \
+            rpm-tools
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Prepare PKGBUILD
+        working-directory: src/pkgbuild
+        run: |
+          sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer")|' PKGBUILD
+          ln -sf ../.. big-pkg-installer
+
+      - name: Build package
+        working-directory: src/pkgbuild
+        run: |
+          chown -R nobody:nobody .
+          su nobody -s /bin/bash -c "makepkg -f --noconfirm --skipinteg"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: big-pkg-installer
+          path: src/pkgbuild/*.pkg.tar.zst
+          if-no-files-found: error
+
+      - name: Show package info
+        working-directory: src/pkgbuild
+        run: |
+          ls -lh *.pkg.tar.zst
+          pacman -Qip *.pkg.tar.zst || true
