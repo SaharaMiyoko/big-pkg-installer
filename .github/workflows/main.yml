@@ -52,19 +52,22 @@ jobs:
         with:
           path: src
 
-      - name: Prepare PKGBUILD
-        working-directory: src/pkgbuild
+      - name: Prepare source and PKGBUILD
+        working-directory: src
         run: |
-          sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer")|' PKGBUILD
+          tar -czf pkgbuild/big-pkg-installer.tar.gz \
+            --exclude='pkgbuild' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='*.tar.gz' \
+            .
 
-          rm -rf big-pkg-installer
-          mkdir -p big-pkg-installer
+          cd pkgbuild
 
-          for d in usr etc opt locale; do
-            if [ -d "../$d" ]; then
-              cp -a "../$d" big-pkg-installer/
-            fi
-          done
+          sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer.tar.gz")|' PKGBUILD
+
+          ls -lh big-pkg-installer.tar.gz
+          cat PKGBUILD | grep -E '^(pkgname|pkgver|source)'
 
           chown -R builder:builder .
 
