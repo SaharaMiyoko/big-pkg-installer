@@ -26,6 +26,7 @@ jobs:
           pacman -S --noconfirm --needed \
             base-devel \
             git \
+            sudo \
             python \
             python-gobject \
             gtk4 \
@@ -38,6 +39,12 @@ jobs:
             python-pytest \
             rpm-tools
 
+      - name: Create build user
+        run: |
+          useradd -m -G wheel builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chage -E -1 builder || true
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -48,12 +55,12 @@ jobs:
         run: |
           sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer")|' PKGBUILD
           ln -sf ../.. big-pkg-installer
+          chown -R builder:builder .
 
       - name: Build package
         working-directory: src/pkgbuild
         run: |
-          chown -R nobody:nobody .
-          su nobody -s /bin/bash -c "makepkg -f --noconfirm --skipinteg"
+          su builder -c "makepkg -f --noconfirm --skipinteg"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
