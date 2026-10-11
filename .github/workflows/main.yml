@@ -56,11 +56,16 @@ jobs:
         working-directory: src/pkgbuild
         run: |
           sed -i 's|source=("git+https://github.com/biglinux/big-pkg-installer.git")|source=("big-pkg-installer")|' PKGBUILD
+
           rm -rf big-pkg-installer
           mkdir -p big-pkg-installer
-          cp -a ../. big-pkg-installer/
-          rm -rf big-pkg-installer/pkgbuild big-pkg-installer/.git big-pkg-installer/.github
-          
+
+          for d in usr etc opt locale; do
+            if [ -d "../$d" ]; then
+              cp -a "../$d" big-pkg-installer/
+            fi
+          done
+
           chown -R builder:builder .
 
       - name: Build package
